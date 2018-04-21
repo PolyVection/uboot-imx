@@ -1,0 +1,12 @@
+if TARGET_MX6ULL_VSM1
+
+config SYS_BOARD
+	default "vsm1"
+
+config SYS_VENDOR
+	default "polyvection"
+
+config SYS_CONFIG_NAME
+	default "vsm1"
+
+endif
