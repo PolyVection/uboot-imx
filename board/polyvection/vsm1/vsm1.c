@@ -26,6 +26,7 @@
 #include <power/pmic.h>
 #include <power/pfuze3000_pmic.h>
 #include "../common/pfuze.h"
+#include <fuse.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -37,14 +38,6 @@ PAD_CTL_DSE_40ohm   | PAD_CTL_SRE_FAST  | PAD_CTL_HYS)
 PAD_CTL_PUS_100K_UP | PAD_CTL_SPEED_MED |               \
 PAD_CTL_DSE_40ohm | PAD_CTL_HYS |            \
 PAD_CTL_ODE)
-
-#define LCD_PAD_CTRL    (PAD_CTL_HYS | PAD_CTL_PUS_100K_UP | PAD_CTL_PUE | \
-PAD_CTL_PKE | PAD_CTL_SPEED_MED | PAD_CTL_DSE_40ohm)
-
-#define GPMI_PAD_CTRL0 (PAD_CTL_PKE | PAD_CTL_PUE | PAD_CTL_PUS_100K_UP)
-#define GPMI_PAD_CTRL1 (PAD_CTL_DSE_40ohm | PAD_CTL_SPEED_MED | \
-PAD_CTL_SRE_FAST)
-#define GPMI_PAD_CTRL2 (GPMI_PAD_CTRL0 | GPMI_PAD_CTRL1)
 
 #define SPI_PAD_CTRL (PAD_CTL_HYS |                \
 PAD_CTL_SPEED_MED |        \
@@ -242,73 +235,6 @@ static void setup_iomux_uart(void)
     imx_iomux_v3_setup_multiple_pads(uart1_pads, ARRAY_SIZE(uart1_pads));
 }
 
-#ifdef CONFIG_FSL_QSPI
-
-#ifndef CONFIG_DM_SPI
-#define QSPI_PAD_CTRL1    \
-(PAD_CTL_SRE_FAST | PAD_CTL_SPEED_MED | \
-PAD_CTL_PKE | PAD_CTL_PUE | PAD_CTL_PUS_47K_UP | PAD_CTL_DSE_120ohm)
-
-static iomux_v3_cfg_t const quadspi_pads[] = {
-    MX6_PAD_NAND_WP_B__QSPI_A_SCLK | MUX_PAD_CTRL(QSPI_PAD_CTRL1),
-    MX6_PAD_NAND_READY_B__QSPI_A_DATA00 | MUX_PAD_CTRL(QSPI_PAD_CTRL1),
-    MX6_PAD_NAND_CE0_B__QSPI_A_DATA01 | MUX_PAD_CTRL(QSPI_PAD_CTRL1),
-    MX6_PAD_NAND_CE1_B__QSPI_A_DATA02 | MUX_PAD_CTRL(QSPI_PAD_CTRL1),
-    MX6_PAD_NAND_CLE__QSPI_A_DATA03 | MUX_PAD_CTRL(QSPI_PAD_CTRL1),
-    MX6_PAD_NAND_DQS__QSPI_A_SS0_B | MUX_PAD_CTRL(QSPI_PAD_CTRL1),
-};
-#endif
-
-static int board_qspi_init(void)
-{
-#ifndef CONFIG_DM_SPI
-    /* Set the iomux */
-    imx_iomux_v3_setup_multiple_pads(quadspi_pads,
-                                     ARRAY_SIZE(quadspi_pads));
-#endif
-    /* Set the clock */
-    enable_qspi_clk(0);
-    
-    return 0;
-}
-#endif
-
-#ifdef CONFIG_NAND_MXS
-static iomux_v3_cfg_t const nand_pads[] = {
-    MX6_PAD_NAND_DATA00__RAWNAND_DATA00 | MUX_PAD_CTRL(GPMI_PAD_CTRL2),
-    MX6_PAD_NAND_DATA01__RAWNAND_DATA01 | MUX_PAD_CTRL(GPMI_PAD_CTRL2),
-    MX6_PAD_NAND_DATA02__RAWNAND_DATA02 | MUX_PAD_CTRL(GPMI_PAD_CTRL2),
-    MX6_PAD_NAND_DATA03__RAWNAND_DATA03 | MUX_PAD_CTRL(GPMI_PAD_CTRL2),
-    MX6_PAD_NAND_DATA04__RAWNAND_DATA04 | MUX_PAD_CTRL(GPMI_PAD_CTRL2),
-    MX6_PAD_NAND_DATA05__RAWNAND_DATA05 | MUX_PAD_CTRL(GPMI_PAD_CTRL2),
-    MX6_PAD_NAND_DATA06__RAWNAND_DATA06 | MUX_PAD_CTRL(GPMI_PAD_CTRL2),
-    MX6_PAD_NAND_DATA07__RAWNAND_DATA07 | MUX_PAD_CTRL(GPMI_PAD_CTRL2),
-    MX6_PAD_NAND_CLE__RAWNAND_CLE | MUX_PAD_CTRL(GPMI_PAD_CTRL2),
-    MX6_PAD_NAND_ALE__RAWNAND_ALE | MUX_PAD_CTRL(GPMI_PAD_CTRL2),
-    MX6_PAD_NAND_CE0_B__RAWNAND_CE0_B | MUX_PAD_CTRL(GPMI_PAD_CTRL2),
-    MX6_PAD_NAND_CE1_B__RAWNAND_CE1_B | MUX_PAD_CTRL(GPMI_PAD_CTRL2),
-    MX6_PAD_NAND_RE_B__RAWNAND_RE_B | MUX_PAD_CTRL(GPMI_PAD_CTRL2),
-    MX6_PAD_NAND_WE_B__RAWNAND_WE_B | MUX_PAD_CTRL(GPMI_PAD_CTRL2),
-    MX6_PAD_NAND_WP_B__RAWNAND_WP_B | MUX_PAD_CTRL(GPMI_PAD_CTRL2),
-    MX6_PAD_NAND_READY_B__RAWNAND_READY_B | MUX_PAD_CTRL(GPMI_PAD_CTRL2),
-    MX6_PAD_NAND_DQS__RAWNAND_DQS | MUX_PAD_CTRL(GPMI_PAD_CTRL2),
-};
-
-static void setup_gpmi_nand(void)
-{
-    struct mxc_ccm_reg *mxc_ccm = (struct mxc_ccm_reg *)CCM_BASE_ADDR;
-    
-    /* config gpmi nand iomux */
-    imx_iomux_v3_setup_multiple_pads(nand_pads, ARRAY_SIZE(nand_pads));
-    
-    setup_gpmi_io_clk((3 << MXC_CCM_CSCDR1_BCH_PODF_OFFSET) |
-                      (3 << MXC_CCM_CSCDR1_GPMI_PODF_OFFSET));
-    
-    /* enable apbh clock gating */
-    setbits_le32(&mxc_ccm->CCGR0, MXC_CCM_CCGR0_APBHDMA_MASK);
-}
-#endif
-
 #ifdef CONFIG_FEC_MXC
 static int setup_fec(int fec_id)
 {
@@ -367,84 +293,6 @@ int mmc_map_to_kernel_blk(int devno)
     return devno;
 }
 
-#ifdef CONFIG_VIDEO_MXS
-static iomux_v3_cfg_t const lcd_pads[] = {
-    MX6_PAD_LCD_CLK__LCDIF_CLK | MUX_PAD_CTRL(LCD_PAD_CTRL),
-    MX6_PAD_LCD_ENABLE__LCDIF_ENABLE | MUX_PAD_CTRL(LCD_PAD_CTRL),
-    MX6_PAD_LCD_HSYNC__LCDIF_HSYNC | MUX_PAD_CTRL(LCD_PAD_CTRL),
-    MX6_PAD_LCD_VSYNC__LCDIF_VSYNC | MUX_PAD_CTRL(LCD_PAD_CTRL),
-    MX6_PAD_LCD_DATA00__LCDIF_DATA00 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-    MX6_PAD_LCD_DATA01__LCDIF_DATA01 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-    MX6_PAD_LCD_DATA02__LCDIF_DATA02 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-    MX6_PAD_LCD_DATA03__LCDIF_DATA03 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-    MX6_PAD_LCD_DATA04__LCDIF_DATA04 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-    MX6_PAD_LCD_DATA05__LCDIF_DATA05 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-    MX6_PAD_LCD_DATA06__LCDIF_DATA06 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-    MX6_PAD_LCD_DATA07__LCDIF_DATA07 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-    MX6_PAD_LCD_DATA08__LCDIF_DATA08 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-    MX6_PAD_LCD_DATA09__LCDIF_DATA09 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-    MX6_PAD_LCD_DATA10__LCDIF_DATA10 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-    MX6_PAD_LCD_DATA11__LCDIF_DATA11 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-    MX6_PAD_LCD_DATA12__LCDIF_DATA12 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-    MX6_PAD_LCD_DATA13__LCDIF_DATA13 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-    MX6_PAD_LCD_DATA14__LCDIF_DATA14 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-    MX6_PAD_LCD_DATA15__LCDIF_DATA15 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-    MX6_PAD_LCD_DATA16__LCDIF_DATA16 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-    MX6_PAD_LCD_DATA17__LCDIF_DATA17 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-    MX6_PAD_LCD_DATA18__LCDIF_DATA18 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-    MX6_PAD_LCD_DATA19__LCDIF_DATA19 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-    MX6_PAD_LCD_DATA20__LCDIF_DATA20 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-    MX6_PAD_LCD_DATA21__LCDIF_DATA21 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-    MX6_PAD_LCD_DATA22__LCDIF_DATA22 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-    MX6_PAD_LCD_DATA23__LCDIF_DATA23 | MUX_PAD_CTRL(LCD_PAD_CTRL),
-    
-    /* LCD_RST */
-    MX6_PAD_SNVS_TAMPER9__GPIO5_IO09 | MUX_PAD_CTRL(NO_PAD_CTRL),
-    
-    /* Use GPIO for Brightness adjustment, duty cycle = period. */
-    MX6_PAD_GPIO1_IO08__GPIO1_IO08 | MUX_PAD_CTRL(NO_PAD_CTRL),
-};
-
-void do_enable_parallel_lcd(struct display_info_t const *dev)
-{
-    enable_lcdif_clock(dev->bus, 1);
-    
-    imx_iomux_v3_setup_multiple_pads(lcd_pads, ARRAY_SIZE(lcd_pads));
-    
-    /* Reset the LCD */
-    gpio_request(IMX_GPIO_NR(5, 9), "lcd reset");
-    gpio_direction_output(IMX_GPIO_NR(5, 9) , 0);
-    udelay(500);
-    gpio_direction_output(IMX_GPIO_NR(5, 9) , 1);
-    
-    /* Set Brightness to high */
-    gpio_request(IMX_GPIO_NR(1, 8), "backlight");
-    gpio_direction_output(IMX_GPIO_NR(1, 8) , 1);
-}
-
-struct display_info_t const displays[] = {{
-    .bus = MX6UL_LCDIF1_BASE_ADDR,
-    .addr = 0,
-    .pixfmt = 24,
-    .detect = NULL,
-    .enable    = do_enable_parallel_lcd,
-    .mode    = {
-        .name            = "TFT43AB",
-        .xres           = 480,
-        .yres           = 272,
-        .pixclock       = 108695,
-        .left_margin    = 8,
-        .right_margin   = 4,
-        .upper_margin   = 2,
-        .lower_margin   = 4,
-        .hsync_len      = 41,
-        .vsync_len      = 10,
-        .sync           = 0,
-        .vmode          = FB_VMODE_NONINTERLACED
-    } } };
-size_t display_count = ARRAY_SIZE(displays);
-#endif
-
 iomux_v3_cfg_t const ecspi4_pads[] = {
     MX6_PAD_UART2_RX_DATA__ECSPI3_SCLK | MUX_PAD_CTRL(SPI_PAD_CTRL),
     MX6_PAD_UART2_RTS_B__ECSPI3_MISO | MUX_PAD_CTRL(SPI_PAD_CTRL),
@@ -483,13 +331,8 @@ int board_init(void)
     
     
     setup_spinor();
-#ifdef CONFIG_FSL_QSPI
-    board_qspi_init();
-#endif
-    
-#ifdef CONFIG_NAND_MXS
-    setup_gpmi_nand();
-#endif
+
+
     
     return 0;
 }
@@ -511,12 +354,38 @@ int board_late_init(void)
 #endif
     
 #ifdef CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG
-    setenv("board_name", "EVK");
+    setenv("board_name", "VS");
+    setenv("board_rev", "A1");
+    setenv("uboot_ver", "2");
     
-    if (is_mx6ull_9x9_evk())
-    setenv("board_rev", "9X9");
-    else
-    setenv("board_rev", "14X14");
+    u32 bank, word, val;
+    int ret;
+    bank=4;
+    word=7;
+    ret = fuse_read(bank, word, &val);
+    if (ret) goto err;
+    
+    if (val == 00000005){
+        setenv("fdt_file", "/boot/imx6ull-voltastream-amp1.dtb");}
+    else if (val == 00000004){
+        setenv("fdt_file", "/boot/imx6ull-voltastream0.dtb");}
+    else if (val == 00000003){
+        setenv("fdt_file", "/boot/imx6ull-voltastream0.dtb");}
+    else if (val == 00000002){
+        setenv("fdt_file", "/boot/imx6ull-voltastream0.dtb");}
+    else if (val == 00000001){
+        setenv("fdt_file", "/boot/imx6ull-voltastream0.dtb");}
+    else if (val == 00000006){
+        setenv("fdt_file", "/boot/imx6ull-vsm1-0006.dtb");}
+    else {
+        setenv("fdt_file", "/boot/imx6ull-voltastream0.dtb");}
+    
+    return 0;
+    
+err:
+    puts("ERROR while reading fuses!\n");
+    return CMD_RET_FAILURE;
+    
 #endif
     
 #ifdef CONFIG_ENV_IS_IN_MMC
@@ -530,10 +399,31 @@ int board_late_init(void)
 
 int checkboard(void)
 {
-   // if (is_mx6ull_9x9_evk())
-    puts("Board: MX6ULL 9x9 EVK\n");
-    //else
-    //puts("Board: MX6ULL 14x14 EVK\n");
+    u32 bank, word, val;
+    int ret;
+    bank=4;
+    word=7;
+    ret = fuse_read(bank, word, &val);
+    if (ret) goto err;
+    
+    if (val == 00000005)
+    puts("Board: VS AMP1\n");
+    else if (val == 00000004)
+    puts("Board: VS ZERO - RAM:8G DAC:42\n");
+    else if (val == 00000003)
+    puts("Board: VS ZERO - RAM:8G DAC:21\n");
+    else if (val == 00000002)
+    puts("Board: VS ZERO - RAM:4G DAC:42\n");
+    else if (val == 00000001)
+    puts("Board: VS ZERO - RAM:4G DAC:21\n");
+    else if (val == 00000006)
+    puts("Board: VS M1 - ID: 0006\n");
+    else
+    puts("Board: Unknown\n");
     
     return 0;
+    
+err:
+    puts("ERROR while reading fuses!\n");
+    return CMD_RET_FAILURE;
 }
