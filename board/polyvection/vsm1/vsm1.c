@@ -356,7 +356,7 @@ int board_late_init(void)
 #ifdef CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG
     setenv("board_name", "VS");
     setenv("board_rev", "A1");
-    setenv("uboot_ver", "2");
+    setenv("uboot_ver", "3");
     
     u32 bank, word, val;
     int ret;
@@ -377,6 +377,8 @@ int board_late_init(void)
         setenv("fdt_file", "/boot/imx6ull-voltastream0.dtb");}
     else if (val == 00000006){
         setenv("fdt_file", "/boot/imx6ull-vsm1-0006.dtb");}
+    else if (val == 00000007){
+        setenv("fdt_file", "/boot/imx6ull-vsm1-0007.dtb");}
     else {
         setenv("fdt_file", "/boot/imx6ull-voltastream0.dtb");}
     
@@ -418,6 +420,8 @@ int checkboard(void)
     puts("Board: VS ZERO - RAM:4G DAC:21\n");
     else if (val == 00000006)
     puts("Board: VS M1 - ID: 0006\n");
+    else if (val == 00000007)
+    puts("Board: VS M1 - ID: 0007\n");
     else
     puts("Board: Unknown\n");
     
